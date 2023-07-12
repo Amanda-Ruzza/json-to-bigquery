@@ -156,3 +156,5 @@ cython_debug/
 #raw files
 nyc_events.json
 nyc_band_events.json
+nyc_band_events2.json
+nyc_band_events2.ndjson
