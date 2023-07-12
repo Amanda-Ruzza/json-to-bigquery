@@ -10,7 +10,20 @@ def process_json_file(json_file_path, output_file_path):
         raw_data = json.load(json_file)
 
     events = raw_data.get("recommendations", [])
-
+    # scanning for empty '{}', and transforming them to "null"
+    def convert_empty_to_null(data):
+        if isinstance(data, list):
+            return [convert_empty_to_null(item) for item in data]
+        elif isinstance(data, dict):
+            updated_data = {}
+            for key, value in data.items():
+                if key == "announcements" and isinstance(value, dict) and len(value) == 0:
+                    updated_data[key] = 'null'
+                else:
+                    updated_data[key] = convert_empty_to_null(value)
+                return updated_data
+        return data
+    
     with open(output_file_path, 'w') as output_file:
         for event_data in events:
             event = event_data.get("event", {})
