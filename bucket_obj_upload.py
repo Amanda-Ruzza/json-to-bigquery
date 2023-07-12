@@ -17,11 +17,15 @@ def process_json_file(json_file_path, output_file_path):
         elif isinstance(data, dict):
             updated_data = {}
             for key, value in data.items():
-                if key == "announcements" and isinstance(value, dict) and len(value) == 0:
-                    updated_data[key] = 'null'
-                else:
-                    updated_data[key] = convert_empty_to_null(value)
-                return updated_data
+                
+                if isinstance(value, dict) and len(value) == 0:
+                    raise ValueError("Encountered empty dictionary: key=%s, data=%s" % (key, data))
+                updated_data[key] = 'null'
+                
+                updated_data[key] = convert_empty_to_null(value)
+ 
+            return updated_data
+            
         return data
     
     with open(output_file_path, 'w') as output_file:
@@ -53,11 +57,14 @@ if __name__ == "__main__":
     ndjson_file_path = "nyc_band_events2.ndjson"  # Output file path for new line-delimited JSON
     
     # Process JSON file and create new line-delimited JSON
-    process_json_file(json_file_path, ndjson_file_path)
+    try:
+        process_json_file(json_file_path, ndjson_file_path)
     
     # Upload new line-delimited JSON file to GCP bucket
-    upload_blob(
-        bucket_name=sys.argv[1],
-        source_file_name=ndjson_file_path,
-        destination_blob_name=sys.argv[2],
-    )
+        upload_blob(
+            bucket_name=sys.argv[1],
+            source_file_name=ndjson_file_path,
+            destination_blob_name=sys.argv[2],
+        )
+    except ValueError as e:
+        print("Error: %s" % str(e))
