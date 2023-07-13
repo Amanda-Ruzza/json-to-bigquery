@@ -8,32 +8,18 @@ def process_json_file(json_file_path, output_file_path):
     """Parses the raw JSON file and creates a new line-delimited JSON file for BigQuery."""
     with open(json_file_path) as json_file:
         raw_data = json.load(json_file)
-
-    events = raw_data.get("recommendations", [])
-    # scanning for empty '{}', and transforming them to "null"
-    def convert_empty_to_null(data):
-        if isinstance(data, list):
-            return [convert_empty_to_null(item) for item in data]
-        elif isinstance(data, dict):
-            updated_data = {}
-            for key, value in data.items():
-                
-                if isinstance(value, dict) and len(value) == 0:
-                    raise ValueError("Encountered empty dictionary: key=%s, data=%s" % (key, data))
-                updated_data[key] = 'null'
-                
-                updated_data[key] = convert_empty_to_null(value)
- 
-            return updated_data
-            
-        return data
+    for recommendation in raw_data["recommendations"]:
+        event = recommendation["event"]
+        if event.get("announcements") == {}:
+            event["announcements"] = None
+    logging.info(f"Empty 'curly braces' converted to 'null'.\n")
     
     with open(output_file_path, 'w') as output_file:
-        for event_data in events:
-            event = event_data.get("event", {})
+        for event_data in event:
+            # event = event_data.get("event", "null")
             output_file.write(json.dumps(event) + '\n')
 
-    logging.info(f"New line-delimited JSON file created: {output_file_path}")
+    logging.info(f"New line-delimited JSON file created: {output_file_path}\n")
     
 
 def upload_blob(bucket_name, source_file_name, destination_blob_name):
@@ -44,7 +30,7 @@ def upload_blob(bucket_name, source_file_name, destination_blob_name):
 
     blob.upload_from_filename(source_file_name)
 
-    logging.info(f"File {source_file_name} uploaded to {destination_blob_name}.")
+    logging.info(f"File {source_file_name} uploaded to {destination_blob_name}.\n")
 
 
 
@@ -66,5 +52,6 @@ if __name__ == "__main__":
             source_file_name=ndjson_file_path,
             destination_blob_name=sys.argv[2],
         )
+    # Create an Exception Handling error for the '{}'
     except ValueError as e:
         print("Error: %s" % str(e))
